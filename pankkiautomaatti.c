@@ -16,13 +16,15 @@ typedef struct
   float balance;
 } Account;
 
-void login(Account *account);
+void login(Account *account, FILE *accountFile);
 
 bool showView(enum View *view, Account *account);
 
 bool mainMenu(enum View *view, Account *account);
 bool withdrawMenu(enum View *view, Account *account);
 bool balanceMenu(enum View *view, Account *account);
+
+void withdrawCustomAmount(Account *account);
 
 void clearInputBuffer(char *buf);
 int getNumOfDigits(int number);
@@ -37,10 +39,11 @@ void readString(char *dest);
 int main()
 {
   Account account;
+  FILE* accountFile = 0;
   enum View view = MAIN;
   bool quit = false;
 
-  login(&account);
+  login(&account, accountFile);
 
   do
   {
@@ -49,14 +52,15 @@ int main()
 
   printf("\nLopetetaan...\n");
 
+  fclose(accountFile);
+
   return 0;
 }
 
-void login(Account *account)
+void login(Account *account, FILE *accountFile)
 {
   int pin = 0;
   bool success = false; 
-  FILE* accountFile = 0;
 
   do 
   {
@@ -66,23 +70,20 @@ void login(Account *account)
     int digitCount = getNumOfDigits(pin);
     if(digitCount != 4)
     {
-      printf("- PIN-koodi pitaa olla 4-numeroinen!\n");
+      printf("- PIN-koodi pitaa olla 4-numeroinen luku!\n");
       continue;
     }
 
     int correctPin;
-    if((accountFile = openAccountFile()) != 0)
-    {
-      correctPin = readPinFromFile(accountFile);
-    }
+    if(accountFile == 0)
+      accountFile = openAccountFile();
+
+    correctPin = readPinFromFile(accountFile);
 
     if(pin == correctPin)
       success = true;
     else
-    {
       printf("- Vaara PIN-koodi. Yrita uudelleen\n");
-      fclose(accountFile);
-    }
   } while (!success);
 
   float balance = readBalanceFromFile(accountFile);
@@ -142,7 +143,7 @@ bool mainMenu(enum View *view, Account *account)
       } break;
       default: {
         invalid = true;
-        printf("- Valintaa ei ole!\n");
+        printf("- Valintaa ei ole!\n\n");
       } break;
     }
 
@@ -151,8 +152,156 @@ bool mainMenu(enum View *view, Account *account)
   return false;
 }
 
+void withdrawCustomAmount(Account *account)
+{
+  int withdraw = 0;
+  bool back = false;
+
+  printf("- Nostomaara pitaa olla 20, 40 tai isompi jos jaollinen 10:lla. Maksiminosto on 1000 euroa.\n");
+
+  do
+  {
+    printf("- Palaa takaisin Otto -valikkoon syottamalla -1.\n");
+    printf("\nPaljonko haluat nostaa: ");
+    readNumber(&withdraw); 
+    if(withdraw > 1000)
+    {
+      printf("- Maksiminostomaara on 1000 euroa!\n");
+      continue;
+    }
+
+    if(withdraw == -1)
+    {
+      back = true;
+      break;
+    } else if(withdraw < 0)
+    {
+      printf("- Kelvoton nostomaara!\n");
+      continue;
+    }
+    
+    if(account->balance < withdraw)
+    {
+      printf("- Tilillasi ei ole tarpeeksi saldo nostoon!\n");
+      continue;
+    }
+
+    if(withdraw == 20)
+    {
+      account->balance -= withdraw;
+      printf("- Nostit 20 euroa 1 kpl 20e seteleilla.\n");
+      back = true;
+      break;
+    } 
+    if(withdraw == 40)
+    {
+      account->balance -= withdraw;
+      printf("- Nostit 40 euroa 2 kpl 20e seteleilla.\n");
+      back = true;
+      break;
+    }
+    
+    if(withdraw < 40)
+    {
+      printf("- Liian pieni nostomaara\n");
+      continue;
+    }
+
+    if(withdraw % 10 != 0)
+    {
+      printf("- Nostomaara ei ole tasaluku\n");
+      continue;
+    }
+
+    int bill50 = withdraw / 50; 
+    int bill20 = 0;
+    int remainder = withdraw % 50;
+
+    if(remainder % 20 == 0)
+      bill20 = remainder / 20;
+    else {
+      int newRemainder = 0;
+      for(int i = bill50 - 1; i > 0; i--)
+      {
+        newRemainder = withdraw - i * 50;
+        if(newRemainder % 20 == 0)
+        {
+          bill20 = newRemainder / 20;
+          bill50 = i;
+          break;
+        }
+      }
+    }
+
+    account->balance -= withdraw;
+
+    printf("- Nostit %d euroa. Kone antoi %d kpl 50e setelia ja %d kpl 20e setelia.\n", withdraw, bill50, bill20);
+    back = true;
+  } while (!back);
+}
 bool withdrawMenu(enum View *view, Account *account)
 {
+  int valinta = -1;
+  bool success = false;
+
+  do
+  {
+    printf("Otto\n");
+    printf("  1 - 20 euroa\n");
+    printf("  2 - 40 euroa\n");
+    printf("  3 - Muu summa\n");
+    printf("  0 - Alkuun\n\n");
+
+    printf("Valinta: ");
+    readNumber(&valinta);
+
+    switch(valinta)
+    {
+      case 1: 
+      {
+        if(account->balance < 20)
+        {
+          printf("- Tilillasi ei ole tarpeeksi saldoa nostoon!\n");
+          continue;
+        }
+        account->balance -= 20;
+        printf("- Nostit 20 euroa 1 kpl 20e seteleilla.\n");
+        success = true;
+      } break;
+
+      case 2: 
+      {
+        if(account->balance < 40)
+        {
+          printf("- Tilillasi ei ole tarpeeksi saldoa nostoon!\n");
+          continue;
+        }
+        account->balance -= 40;
+        printf("- Nostit 40 euroa 2 kpl 20e seteleilla.\n");
+        success = true;
+      } break;
+
+      case 3: 
+      {
+        withdrawCustomAmount(account);
+        *view = MAIN;
+        success = true;
+      } break;
+      
+      case 0:
+      {
+        success = true;
+      } break;
+
+      default: 
+      {
+        printf("- Valintaa ei ole!\n\n");
+      } break;
+    }
+
+  } while(!success);
+
+  *view = MAIN;
   return false;
 }
 
@@ -177,7 +326,7 @@ bool balanceMenu(enum View *view, Account *account)
       return true;
     } 
 
-    printf("- Valintaa ei ole!\n");
+    printf("- Valintaa ei ole!\n\n");
   } while (invalid);
 
   return false; 
@@ -187,7 +336,7 @@ void readNumber(int *input)
 {
   char buffer[10];
   char *endPtr;
-  int number = -1;
+  int number = -2; // -2 = invalid input
   
   fgets(buffer, 10, stdin);
   
@@ -196,9 +345,9 @@ void readNumber(int *input)
   number = strtol(buffer, &endPtr, 10);
 
   if(buffer == endPtr)
-    number = -1;
+    number = -2;
   else if(*endPtr != '\0')
-    number = -1;
+    number = -2;
 
   memcpy(input, &number, sizeof(int));
 }

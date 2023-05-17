@@ -14,7 +14,7 @@ enum View
 typedef struct
 {
   int number;
-  int pin;
+  char* pin;
   float balance;
   FILE *file;
 } Account;
@@ -37,11 +37,12 @@ void clearInputBuffer(char *buf);
 int getNumOfDigits(int number);
 
 FILE* openAccountFile();
-int readPinFromFile(FILE* file);
+void readPinFromFile(FILE* file, char* dest);
 float readBalanceFromFile(FILE* file);
 
 void readNumber(int *input);
 void readString(char *dest);
+bool isNumber(const char *str);
 
 /**
  * @brief 
@@ -78,7 +79,7 @@ int main()
 void login(Account *account)
 {
   int accNumber = 0;
-  int pin = 0;
+  char pin[5];
   bool success = false; 
 
   while (!success)
@@ -100,20 +101,26 @@ void login(Account *account)
     }
 
     printf("Syota 4-numeroinen PIN-koodi: ");
-    readNumber(&pin);
-
-    int digitCount = getNumOfDigits(pin);
-    if(digitCount != 4)
+    readString(pin);
+    
+    if(!isNumber(pin))
     {
-      printf("- PIN-koodi pitaa olla 4-numeroinen luku!\n");
+      printf("- Epakelpo PIN-koodi!\n");
       continue;
     }
 
-    int correctPin;
+    int digitCount = strlen(pin);
+    if(digitCount != 4)
+    {
+      printf("- PIN-koodi pitaa olla 4-numeroinen!\n");
+      continue;
+    }
 
-    correctPin = readPinFromFile(account->file);
+    char correctPin[5];
 
-    if(pin == correctPin)
+    readPinFromFile(account->file, correctPin);
+
+    if(strcmp(pin, correctPin) == 0)
       success = true;
     else
       printf("- Vaara PIN-koodi. Yrita uudelleen\n");
@@ -521,6 +528,28 @@ void readNumber(int *input)
 /**
  * @brief 
  * 
+ * Check if string contains only numbers 
+ * 
+ * @param str String to check. 
+ * @returns Boolean if the string contains only numbers
+ */
+bool isNumber(const char *str)
+{
+  if(isspace(*str))
+    return false;
+
+  for(int i = 0; str[i] != '\0'; i++)
+  {
+    if(!isdigit(str[i]))
+      return false;
+  }
+
+  return true;
+}
+
+/**
+ * @brief 
+ * 
  * Reads from stdin and copies the input to variable
  * 
  * @param dest Destination of the input string. 
@@ -533,6 +562,8 @@ void readString(char *dest)
   clearInputBuffer(buffer);
 
   memcpy(dest, buffer, strlen(buffer));
+
+  dest[strlen(buffer)] = '\0';
 }
 
 /**
@@ -546,14 +577,10 @@ void readString(char *dest)
  */
 int getNumOfDigits(int number)
 {
-  int digits = 0;
-  while (number != 0)
-  {
-    number /= 10;
-    digits++;
-  }
-
-  return digits;
+  char numStr[11];
+  sprintf(numStr, "%0*d", number);
+  printf("strlen: %d str: %s\n", strlen(numStr), numStr);
+  return strlen(numStr);
 }
 
 /**
@@ -599,21 +626,12 @@ FILE* openAccountFile(int accNumber)
  * Reads the pin row of the account file.
  *  
  * @param file The account file pointer 
- * @returns The pin code.
+ * @param dest Destination to copy the pin
  */
-int readPinFromFile(FILE* file)
+void readPinFromFile(FILE* file, char* dest)
 {
   rewind(file);
-  int code;
-
-  int result = fscanf(file, "%d", &code);
-  if(!result)
-  {
-    printf("- PIN-koodin luku epaonnistui!");
-    return 0;
-  }
-
-  return code;
+  fgets(dest, 5, file);
 }
 
 /**

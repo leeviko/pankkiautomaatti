@@ -12,11 +12,17 @@ enum View
 
 typedef struct
 {
+  int number;
   int pin;
   float balance;
+  FILE *file;
 } Account;
 
-void login(Account *account, FILE *accountFile);
+void login(Account *account);
+
+void updateFileBalance(Account *account);
+
+void getAccountFileName(int accNumber, char* dest);
 
 bool showView(enum View *view, Account *account);
 
@@ -36,34 +42,62 @@ float readBalanceFromFile(FILE* file);
 void readNumber(int *input);
 void readString(char *dest);
 
+/**
+ * @brief 
+ * 
+ * Main function 
+ * 
+ */
 int main()
 {
-  Account account;
-  FILE* accountFile = 0;
-  enum View view = MAIN;
   bool quit = false;
+  enum View view = MAIN;
+  Account account;
+  account.file = NULL;
 
-  login(&account, accountFile);
+  login(&account);
 
-  do
-  {
+  while(!quit)
     quit = showView(&view, &account);
-  } while (!quit);
 
   printf("\nLopetetaan...\n");
 
-  fclose(accountFile);
+  fclose(account.file);
 
   return 0;
 }
 
-void login(Account *account, FILE *accountFile)
+/**
+ * @brief 
+ * 
+ * Login. Asks for account number and pin code. 
+ *  
+ * @param account Account number 
+ */
+void login(Account *account)
 {
+  int accNumber = 0;
   int pin = 0;
   bool success = false; 
 
-  do 
+  while (!success)
   {
+    if(accNumber == 0)
+    {
+      printf("Syota tilinumero: ");
+      readNumber(&accNumber);
+
+      account->file = openAccountFile(accNumber);
+      if(account->file == NULL)
+      {
+        printf("- Vaara tilinumero. Yrita uudelleen.\n");
+        accNumber = 0;
+        continue;
+      }
+
+      account->number = accNumber;
+    }
+
     printf("Syota 4-numeroinen PIN-koodi: ");
     readNumber(&pin);
 
@@ -75,24 +109,114 @@ void login(Account *account, FILE *accountFile)
     }
 
     int correctPin;
-    if(accountFile == 0)
-      accountFile = openAccountFile();
 
-    correctPin = readPinFromFile(accountFile);
+    correctPin = readPinFromFile(account->file);
 
     if(pin == correctPin)
       success = true;
     else
       printf("- Vaara PIN-koodi. Yrita uudelleen\n");
-  } while (!success);
+  }
 
-  float balance = readBalanceFromFile(accountFile);
+  float balance = readBalanceFromFile(account->file);
 
   account->pin = pin;
   account->balance = balance;
-  fclose(accountFile);
+
+  fclose(account->file);
+  account->file = NULL;
 }
 
+/**
+ * @brief 
+ * 
+ * Update file balance 
+ *  
+ * @param account Account number 
+ */
+void updateFileBalance(Account *account)
+{
+  int balanceRow = 2;
+  int currentLine = 1;
+
+  if(account->file == NULL)
+    account->file = openAccountFile(account->number);
+
+  rewind(account->file);
+
+  FILE *tempFile = fopen(".temp", "w");
+
+  if(tempFile == NULL)
+  {
+    printf("- Saldon paivitys epaonnistui\n");
+    return;
+  }
+
+  char ch;
+  while((ch = fgetc(account->file)) != EOF)
+  {
+    if(currentLine != balanceRow)
+      fputc(ch, tempFile);
+    else
+    {
+      fprintf(tempFile, "%.2f", account->balance);
+      while ((ch = fgetc(account->file)) != '\n' && ch != EOF);
+    }
+
+    if(ch == '\n')
+      currentLine++;
+  }
+
+  fclose(account->file);
+  fclose(tempFile);
+
+  account->file = NULL;
+
+  char filename[20];
+  getAccountFileName(account->number, filename);
+
+  if(remove(filename) != 0)
+  {
+    printf("- Saldon paivitys epaonnistui\n");
+    return;
+  }
+
+  if(rename(".temp", filename) != 0)
+  {
+    printf("- Saldon paivitys epaonnistui\n");
+    return;
+  }
+}
+
+/**
+ * @brief 
+ * 
+ * Make account filename from the acc number 
+ *  
+ * @param accNumber Account number 
+ * @param dest Destination 
+ */
+void getAccountFileName(int accNumber, char* dest)
+{
+  char filename[20];
+
+  sprintf(filename, "%d", accNumber);
+  strcat(filename, ".acc");
+
+  memcpy(dest, filename, strlen(filename));
+
+  dest[strlen(filename)] = '\0';
+}
+
+/**
+ * @brief 
+ * 
+ * Decide what menu to show. 
+ *  
+ * @param view Current view 
+ * @param account Account struct 
+ * @returns If should quit the app 
+ */
 bool showView(enum View *view, Account *account)
 {
   switch(*view)
@@ -112,6 +236,15 @@ bool showView(enum View *view, Account *account)
   }
 }
 
+/**
+ * @brief 
+ * 
+ * Main menu. There is three options: Go to withdraw, check balance or quit 
+ *  
+ * @param view Current view 
+ * @param account Account struct 
+ * @returns If should quit the app 
+ */
 bool mainMenu(enum View *view, Account *account)
 {
   bool invalid = true;
@@ -152,6 +285,14 @@ bool mainMenu(enum View *view, Account *account)
   return false;
 }
 
+/**
+ * @brief 
+ * 
+ * Withdraw custom amount.
+ * Also calculate the number of 50e and 20e bills to be given
+ * 
+ * @param account Account struct
+ */
 void withdrawCustomAmount(Account *account)
 {
   int withdraw = 0;
@@ -161,9 +302,11 @@ void withdrawCustomAmount(Account *account)
 
   do
   {
-    printf("- Palaa takaisin Otto -valikkoon syottamalla -1.\n");
+    printf("- Palaa paavalikkoon syottamalla -1.\n");
+
     printf("\nPaljonko haluat nostaa: ");
     readNumber(&withdraw); 
+
     if(withdraw > 1000)
     {
       printf("- Maksiminostomaara on 1000 euroa!\n");
@@ -186,37 +329,19 @@ void withdrawCustomAmount(Account *account)
       continue;
     }
 
-    if(withdraw == 20)
-    {
-      account->balance -= withdraw;
-      printf("- Nostit 20 euroa 1 kpl 20e seteleilla.\n");
-      back = true;
-      break;
-    } 
-    if(withdraw == 40)
-    {
-      account->balance -= withdraw;
-      printf("- Nostit 40 euroa 2 kpl 20e seteleilla.\n");
-      back = true;
-      break;
-    }
-    
-    if(withdraw < 40)
-    {
-      printf("- Liian pieni nostomaara\n");
-      continue;
-    }
-
     if(withdraw % 10 != 0)
     {
       printf("- Nostomaara ei ole tasaluku\n");
       continue;
     }
 
+    // Laske setelimäärät
+
     int bill50 = withdraw / 50; 
     int bill20 = 0;
     int remainder = withdraw % 50;
 
+    // Jos jäljelle jäänyt on jaollinen 20
     if(remainder % 20 == 0)
       bill20 = remainder / 20;
     else {
@@ -233,14 +358,33 @@ void withdrawCustomAmount(Account *account)
       }
     }
 
+    if(bill50 == 0 && bill20 == 0)
+    {
+      printf("- Liian pieni nostomaara\n");
+      continue;
+    }
+
     account->balance -= withdraw;
 
     printf("- Nostit %d euroa. Kone antoi %d kpl 50e setelia ja %d kpl 20e setelia.\n", withdraw, bill50, bill20);
+
     back = true;
   } while (!back);
 }
+
+/**
+ * @brief 
+ * 
+ * Withdraw menu. There is three options: withdraw 20 or 40 euros, 
+ * or withdraw custom amount.
+ *  
+ * @param view Current view 
+ * @param account Account struct 
+ * @returns If should quit the app 
+ */
 bool withdrawMenu(enum View *view, Account *account)
 {
+  float oldBalance = account->balance;
   int valinta = -1;
   bool success = false;
 
@@ -284,7 +428,6 @@ bool withdrawMenu(enum View *view, Account *account)
       case 3: 
       {
         withdrawCustomAmount(account);
-        *view = MAIN;
         success = true;
       } break;
       
@@ -301,10 +444,23 @@ bool withdrawMenu(enum View *view, Account *account)
 
   } while(!success);
 
+  if(oldBalance != account->balance)
+    updateFileBalance(account);
+
   *view = MAIN;
   return false;
 }
 
+/**
+ * @brief 
+ * 
+ * Balance menu. Shows the current balance, 
+ * and two options: Return to mainmenu or quit
+ * 
+ * @param view Current view
+ * @param account Account struct
+ * @returns If should quit the app 
+ */
 bool balanceMenu(enum View *view, Account *account)
 {
   printf("Tilin saldo: %.2f\n", account->balance);
@@ -332,6 +488,14 @@ bool balanceMenu(enum View *view, Account *account)
   return false; 
 }
 
+/**
+ * @brief 
+ * 
+ * Reads from stdin and converts them to int 
+ * and copies the input to variable
+ * 
+ * @param input Where the input will be copied. -2 if invalid input
+ */
 void readNumber(int *input)
 {
   char buffer[10];
@@ -352,6 +516,13 @@ void readNumber(int *input)
   memcpy(input, &number, sizeof(int));
 }
 
+/**
+ * @brief 
+ * 
+ * Reads from stdin and copies the input to variable
+ * 
+ * @param dest Destination of the input string. 
+ */
 void readString(char *dest)
 {
   char buffer[100];
@@ -362,6 +533,15 @@ void readString(char *dest)
   memcpy(dest, buffer, strlen(buffer));
 }
 
+/**
+ * @brief 
+ * 
+ * Get the number of digits in a number 
+ * 
+ * @param number The number to check
+ * @returns Number of digits
+ *
+ */
 int getNumOfDigits(int number)
 {
   int digits = 0;
@@ -374,6 +554,14 @@ int getNumOfDigits(int number)
   return digits;
 }
 
+/**
+ * @brief 
+ * 
+ * Puts null pointer if last character of a buffer is newline.
+ * Also clears the remaining characters from the input buffer
+ * 
+ * @param buf The string to check for newline
+ */
 void clearInputBuffer(char *buf)
 {
   if(buf[strlen(buf) - 1] == '\n')
@@ -382,21 +570,35 @@ void clearInputBuffer(char *buf)
     while(getc(stdin) != '\n');
 }
 
-FILE* openAccountFile()
+/**
+ * @brief 
+ * 
+ * Opens the account file.
+ * 
+ * @returns The file pointer or NULL on failure
+ */
+FILE* openAccountFile(int accNumber)
 {
   FILE *file;
-  int code;
 
-  file = fopen(".tili", "r");
+  char filename[20];
+  getAccountFileName(accNumber, filename);
+
+  file = fopen(filename, "r");
   if(file == NULL)
-  {
-    printf("- Tilin avaus epaonnistui!\n");
-    return 0;
-  }
+    return NULL;
 
   return file;
 }
 
+/**
+ * @brief 
+ * 
+ * Reads the pin row of the account file.
+ *  
+ * @param file The account file pointer 
+ * @returns The pin code.
+ */
 int readPinFromFile(FILE* file)
 {
   rewind(file);
@@ -412,6 +614,14 @@ int readPinFromFile(FILE* file)
   return code;
 }
 
+/**
+ * @brief 
+ * 
+ * Reads the balance row of the account file.
+ *  
+ * @param file The account file pointer 
+ * @returns Account balance.
+ */
 float readBalanceFromFile(FILE* file)
 {
   rewind(file);
@@ -424,7 +634,7 @@ float readBalanceFromFile(FILE* file)
     if(c == EOF)
     {
       printf("- Saldon hakeminen epaonnistui!\n");
-      return -1;
+      return 0;
     }
   }
 
@@ -432,7 +642,7 @@ float readBalanceFromFile(FILE* file)
   if(!result)
   {
     printf("- Saldon hakeminen epaonnistui!\n");
-    return -1;
+    return 0;
   }
 
   return balance;

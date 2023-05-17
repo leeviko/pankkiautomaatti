@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
+#include <ctype.h>
 
 enum View
 {
@@ -503,14 +504,15 @@ void readNumber(int *input)
   int number = -2; // -2 = invalid input
   
   fgets(buffer, 10, stdin);
-  
   clearInputBuffer(buffer);
   
   number = strtol(buffer, &endPtr, 10);
-
   if(buffer == endPtr)
     number = -2;
   else if(*endPtr != '\0')
+    number = -2;
+
+  if(isspace(*buffer))
     number = -2;
 
   memcpy(input, &number, sizeof(int));

@@ -19,7 +19,7 @@ typedef struct
   FILE *file;
 } Account;
 
-void login(Account *account);
+bool login(Account *account);
 
 void updateFileBalance(Account *account);
 
@@ -56,7 +56,12 @@ int main()
   Account account;
   account.file = NULL;
 
-  login(&account);
+  if(!login(&account))
+  {
+    printf("- Kirjautumisessa tapahtui virhe. Lopetetaan...\n");
+    fclose(account.file);
+    return 0;
+  }
 
   while(!quit)
     quit = showView(&view, &account);
@@ -74,8 +79,9 @@ int main()
  * Login. Asks for account number and pin code. 
  *  
  * @param account Account number 
+ * @returns If the account file content is in wrong format
  */
-void login(Account *account)
+bool login(Account *account)
 {
   int accNumber = 0;
   char pin[5];
@@ -122,24 +128,41 @@ void login(Account *account)
     if(strcmp(pin, correctPin) == 0)
       success = true;
     else
+    {
+      if(strlen(correctPin) != 4 || !isNumber(correctPin))
+      {
+        printf("- Tilin PIN-koodi on vaarassa muodossa, tai sita ei ole asetettu!\n");
+        return false; 
+      }
       printf("- Vaara PIN-koodi. Yrita uudelleen\n");
+    }
   }
 
   float balance = readBalanceFromFile(account->file);
 
+  if(balance < 0.0f)
+  {
+    printf("- Tilin saldoa ei ole asetettu tai se on vaarassa muodossa!\n");
+    return false;
+  }
+
+  fclose(account->file);
+
+  account->file = NULL;
   account->pin = pin;
   account->balance = balance;
 
-  fclose(account->file);
-  account->file = NULL;
+  return true;
 }
 
 /**
  * @brief 
  * 
- * Update file balance 
+ * Update file balance. Makes temporary file where it copies 
+ * everything from the account file except replaces the 
+ * balance row with the new balance 
  *  
- * @param account Account number 
+ * @param account Account struct 
  */
 void updateFileBalance(Account *account)
 {
@@ -332,13 +355,13 @@ void withdrawCustomAmount(Account *account)
     
     if(account->balance < withdraw)
     {
-      printf("- Tilillasi ei ole tarpeeksi saldo nostoon!\n");
+      printf("- Tilillasi ei ole tarpeeksi saldoa nostoon!\n");
       continue;
     }
 
     if(withdraw % 10 != 0)
     {
-      printf("- Nostomaara pitaa olla jaollinen 10:lla\n");
+      printf("- Kelvoton nostomäärä\n");
       continue;
     }
 
@@ -575,10 +598,10 @@ void readString(char *dest)
  */
 void clearInputBuffer(char *buf)
 {
-  if(buf[strlen(buf) - 1] == '\n')
-    buf[strlen(buf) - 1] = '\0'; 
-  else
+  if(buf[strlen(buf) - 1] != '\n')
     while(getc(stdin) != '\n');
+
+  buf[strcspn(buf, "\n")] = 0;
 }
 
 /**
@@ -614,6 +637,8 @@ void readPinFromFile(FILE* file, char* dest)
 {
   rewind(file);
   fgets(dest, 5, file);
+
+  dest[strcspn(dest, "\n")] = 0;
 }
 
 /**
@@ -622,30 +647,24 @@ void readPinFromFile(FILE* file, char* dest)
  * Reads the balance row of the account file.
  *  
  * @param file The account file pointer 
- * @returns Account balance.
+ * @returns Account balance. -1 on failure
  */
 float readBalanceFromFile(FILE* file)
 {
   rewind(file);
-  float balance;
+  float balance = -1;
 
   // Skip pin row
   char c;
   while((c = fgetc(file)) != '\n')
   {
     if(c == EOF)
-    {
-      printf("- Saldon hakeminen epaonnistui!\n");
-      return 0;
-    }
+      return -1;
   }
 
   int result = fscanf(file, "%f", &balance);
   if(!result)
-  {
-    printf("- Saldon hakeminen epaonnistui!\n");
-    return 0;
-  }
+    return -1;
 
   return balance;
 }

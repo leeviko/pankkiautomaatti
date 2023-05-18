@@ -34,7 +34,6 @@ bool balanceMenu(enum View *view, Account *account);
 void withdrawCustomAmount(Account *account);
 
 void clearInputBuffer(char *buf);
-int getNumOfDigits(int number);
 
 FILE* openAccountFile();
 void readPinFromFile(FILE* file, char* dest);
@@ -102,7 +101,7 @@ void login(Account *account)
 
     printf("Syota 4-numeroinen PIN-koodi: ");
     readString(pin);
-    
+
     if(!isNumber(pin))
     {
       printf("- Epakelpo PIN-koodi!\n");
@@ -339,7 +338,7 @@ void withdrawCustomAmount(Account *account)
 
     if(withdraw % 10 != 0)
     {
-      printf("- Nostomaara ei ole tasaluku\n");
+      printf("- Nostomaara pitaa olla jaollinen 10:lla\n");
       continue;
     }
 
@@ -564,23 +563,6 @@ void readString(char *dest)
   memcpy(dest, buffer, strlen(buffer));
 
   dest[strlen(buffer)] = '\0';
-}
-
-/**
- * @brief 
- * 
- * Get the number of digits in a number 
- * 
- * @param number The number to check
- * @returns Number of digits
- *
- */
-int getNumOfDigits(int number)
-{
-  char numStr[11];
-  sprintf(numStr, "%0*d", number);
-  printf("strlen: %d str: %s\n", strlen(numStr), numStr);
-  return strlen(numStr);
 }
 
 /**

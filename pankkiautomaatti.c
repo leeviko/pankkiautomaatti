@@ -13,7 +13,7 @@ enum View
 
 typedef struct
 {
-  int number;
+  char* number;
   char* pin;
   float balance;
   FILE *file;
@@ -23,7 +23,7 @@ bool login(Account *account);
 
 void updateFileBalance(Account *account);
 
-void getAccountFileName(int accNumber, char* dest);
+void getAccountFileName(char* accNumber, char* dest);
 
 bool showView(enum View *view, Account *account);
 
@@ -83,26 +83,32 @@ int main()
  */
 bool login(Account *account)
 {
-  int accNumber = 0;
+  char accNumber[21] = "";
   char pin[5];
   bool success = false; 
 
   while (!success)
   {
-    if(accNumber == 0)
+    if(accNumber[0] == '\0')
     {
       printf("Syota tilinumero: ");
-      readNumber(&accNumber);
+      readString(accNumber);
+
+      if(!isNumber(accNumber))
+      {
+        printf("Epakelpo tilinumero!\n");
+        accNumber[0] = '\0';
+        continue;
+      }
 
       account->file = openAccountFile(accNumber);
       if(account->file == NULL)
       {
         printf("- Vaara tilinumero. Yrita uudelleen.\n");
-        accNumber = 0;
+        accNumber[0] = '\0';
         continue;
       }
 
-      account->number = accNumber;
     }
 
     printf("Syota 4-numeroinen PIN-koodi: ");
@@ -149,6 +155,7 @@ bool login(Account *account)
   fclose(account->file);
 
   account->file = NULL;
+  account->number = accNumber;
   account->pin = pin;
   account->balance = balance;
 
@@ -226,11 +233,11 @@ void updateFileBalance(Account *account)
  * @param accNumber Account number 
  * @param dest Destination 
  */
-void getAccountFileName(int accNumber, char* dest)
+void getAccountFileName(char* accNumber, char* dest)
 {
   char filename[20];
 
-  sprintf(filename, "%d", accNumber);
+  sprintf(filename, "%s", accNumber);
   strcat(filename, ".acc");
 
   memcpy(dest, filename, strlen(filename));
@@ -591,7 +598,7 @@ void readString(char *dest)
 /**
  * @brief 
  * 
- * Puts null pointer if last character of a buffer is newline.
+ * Puts null pointer on the first encounter of newline.
  * Also clears the remaining characters from the input buffer
  * 
  * @param buf The string to check for newline
@@ -611,7 +618,7 @@ void clearInputBuffer(char *buf)
  * 
  * @returns The file pointer or NULL on failure
  */
-FILE* openAccountFile(int accNumber)
+FILE* openAccountFile(char* accNumber)
 {
   FILE *file;
 

@@ -2,22 +2,18 @@
 ---- Syöttöaineisto: (tyhjä)
 Syota tilinumero: 
 - Vaara tilinumero. Yrita uudelleen.
-Syota tilinumero: 
 
 ---- Syöttöaineisto: "-12345"  
 Syota tilinumero: -12345
 - Vaara tilinumero. Yrita uudelleen.
-Syota tilinumero: 
 
 ---- Syöttöaineisto: "10000000000000000000000000000"
 Syota tilinumero: 10000000000000000000000000000
 - Vaara tilinumero. Yrita uudelleen.
-Syota tilinumero: 
 
 ---- Syöttöaineisto: "abc123"
 Syota tilinumero: abc123
 - Vaara tilinumero. Yrita uudelleen.
-Syota tilinumero: 
 
 ---- Syöttöaineisto: "12345"
 Syota tilinumero: 12345
@@ -27,27 +23,22 @@ Syota 4-numeroinen PIN-koodi:
 ---- Syöttöaineisto: (tyhjä)
 Syota 4-numeroinen PIN-koodi:    
 - PIN-koodi pitaa olla 4-numeroinen!
-Syota 4-numeroinen PIN-koodi: 
 
 ---- Syöttöaineisto: "-0123" 
 Syota 4-numeroinen PIN-koodi: -0123
 - Epakelpo PIN-koodi!
-Syota 4-numeroinen PIN-koodi:
 
 ---- Syöttöaineisto: " 0123"
 Syota 4-numeroinen PIN-koodi:  0123
 - Epakelpo PIN-koodi!
-Syota 4-numeroinen PIN-koodi:
 
 ---- Syöttöaineisto: "10000000000000000000000000000"
 Syota 4-numeroinen PIN-koodi: 10000000000000000000000000000
 - PIN-koodi pitaa olla 4-numeroinen!
-Syota 4-numeroinen PIN-koodi:
 
 ---- Syöttöaineisto: "abc1"
 Syota 4-numeroinen PIN-koodi: abc1
 - Epakelpo PIN-koodi!
-Syota 4-numeroinen PIN-koodi:
 
 ---- Syöttöaineisto: "0123"
 Syota 4-numeroinen PIN-koodi: 0123
@@ -70,8 +61,6 @@ Valitse
   2 - Saldo
   0 - Lopeta
 
-Valinta:
-
 ---- Syöttöaineisto: (tyhjä)
 Valinta:
 - Valintaa ei ole!
@@ -81,8 +70,6 @@ Valitse
   2 - Saldo
   0 - Lopeta
 
-Valinta:
-
 ---- Syöttöaineisto: "a1"
 Valinta: a1
 - Valintaa ei ole!
@@ -91,8 +78,6 @@ Valitse
   1 - Otto
   2 - Saldo
   0 - Lopeta
-
-Valinta:
 
 ---- Syöttöaineisto: "0"
 Valinta: 0
@@ -109,8 +94,6 @@ Otto
   3 - Muu summa
   0 - Alkuun
 
-Valinta:
-
 ---- Syöttöaineisto: "2"
 Valinta: 2 
 
@@ -118,8 +101,6 @@ Valinta: 2
 Tilin saldo: 5000.00
   1 - Alkuun
   0 - Lopeta
-
-Valinta:
 
 ---- TESTAUSTAPAUS 4
 ---- Syöttöaineisto: "-1"
@@ -132,8 +113,6 @@ Otto
   3 - Muu summa
   0 - Alkuun
 
-Valinta:
-
 ---- Syöttöaineisto: "1"
 Valinta: 1
 - Nostit 20 euroa 1 kpl 20e seteleilla.
@@ -143,8 +122,6 @@ Valitse
   1 - Otto
   2 - Saldo
   0 - Lopeta
-
-Valinta:
 
 ---- Syöttöaineisto: "2"
 Valinta: 2
@@ -156,14 +133,10 @@ Valitse
   2 - Saldo
   0 - Lopeta
 
-Valinta:
-
 ---- Syöttöaineisto: "3"
 Valinta: 3
 - Nostomaara pitaa olla 20, 40 tai isompi jos jaollinen 10:lla. Maksiminosto on 1000 euroa.
 - Palaa paavalikkoon syottamalla -1.
-
-Paljonko haluat nostaa:
 
 ---- NOSTOSUMMAN KYSELY (TILILLÄ 500e)
 ---- Syöttöaineisto: "0"
@@ -171,28 +144,20 @@ Paljonko haluat nostaa: 0
 - Liian pieni nostomaara
 - Palaa paavalikkoon syottamalla -1.
 
-Paljonko haluat nostaa:
-
 ---- Syöttöaineisto: "1001"
 Paljonko haluat nostaa: 1001
 - Maksiminostomaara on 1000 euroa!
 - Palaa paavalikkoon syottamalla -1.
-
-Paljonko haluat nostaa:
 
 ---- Syöttöaineisto: "-100"
 Paljonko haluat nostaa: -100
 - Kelvoton nostomaara!
 - Palaa paavalikkoon syottamalla -1.
 
-Paljonko haluat nostaa:
-
 ---- Syöttöaineisto: "123"
 Paljonko haluat nostaa: 123
 - Kelvoton nostomäärä
 - Palaa paavalikkoon syottamalla -1.
-
-Paljonko haluat nostaa:
 
 ---- Syöttöaineisto: "130"
 Paljonko haluat nostaa: 130
@@ -204,14 +169,10 @@ Valitse
   2 - Saldo
   0 - Lopeta
 
-Valinta:
-
 ---- Syöttöaineisto: "1000"
 Paljonko haluat nostaa: 1000
 - Tilillasi ei ole tarpeeksi saldoa nostoon!
 - Palaa paavalikkoon syottamalla -1.
-
-Paljonko haluat nostaa:
 
 ---- Syöttöaineisto: "-1"
 Paljonko haluat nostaa: -1
@@ -222,20 +183,14 @@ Valitse
   2 - Saldo
   0 - Lopeta
 
-Valinta:
-
 ---- TESTAUSTAPAUS 5
 ---- Syöttöaineisto: "-1"
 Valinta: -1
 - Valintaa ei ole!
 
-Valinta:
-
 ---- Syöttöaineisto: (tyhjä)
 Valinta:
 - Valintaa ei ole!
-
-Valinta:
 
 ---- Syöttöaineisto: "1"
 Valinta: 1
@@ -245,8 +200,6 @@ Valitse
   1 - Otto
   2 - Saldo
   0 - Lopeta
-
-Valinta:
 
 ---- Syöttöaineisto: "0"
 Valinta: 0
@@ -278,8 +231,6 @@ Valitse
   2 - Saldo
   0 - Lopeta
 
-Valinta:
-
 ---- TESTAUSTAPAUS 7
 ---- Saldon arvo: (tyhjä)
 Syota 4-numeroinen PIN-koodi: 1234
@@ -304,5 +255,3 @@ Valitse
   1 - Otto
   2 - Saldo
   0 - Lopeta
-
-Valinta:

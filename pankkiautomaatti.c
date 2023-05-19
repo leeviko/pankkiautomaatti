@@ -13,6 +13,8 @@ enum View
 
 typedef struct
 {
+  // Number and pin are strings because it makes checking their length etc easier.
+  // Also this allows the pin to start with zeros.
   char* number;
   char* pin;
   float balance;
@@ -96,7 +98,7 @@ bool login(Account *account)
 
       if(!isNumber(accNumber))
       {
-        printf("Epakelpo tilinumero!\n");
+        printf("- Epakelpo tilinumero!\n");
         accNumber[0] = '\0';
         continue;
       }
